@@ -39,6 +39,14 @@ a:focus {
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
 }
 
+.trail { 
+    position: absolute;
+    height: 6px; width: 6px;
+    border-radius: 50%;
+    background: red;
+    pointer-events: none;
+}
+
 img a {
     -webkit-touch-callout: none;
     /* iOS Safari */
@@ -115,7 +123,7 @@ body {
 
 }
 
-#zyyo-loading {
+#Sharon-loading {
     background: radial-gradient(white, #d8eaff);
     background-size: 100%;
     background-position: center;
@@ -135,7 +143,7 @@ body {
 
 
 
-#zyyo-loading-center {
+#Sharon-loading-center {
     height: 150px;
     width: 150px;
     position: relative;
@@ -164,7 +172,7 @@ body {
 
 
 
-.zyyo-filter {
+.Sharon-filter {
     position: fixed;
     width: 100vw;
     height: 100vh;
@@ -173,7 +181,7 @@ body {
     background: var(--back-filter-color);
 }
 
-.zyyo-main {
+.Sharon-main {
 
     width: 100%;
     transition: transform 0.5s ease;
@@ -182,7 +190,7 @@ body {
     flex-direction: row;
 }
 
-.zyyo-left {
+.Sharon-left {
     overflow-y: scroll;
     width: 230px;
     height: 100vh;
@@ -194,7 +202,7 @@ body {
 }
 
 
-.zyyo-left::-webkit-scrollbar {
+.Sharon-left::-webkit-scrollbar {
     display: none;
 }
 
@@ -300,7 +308,7 @@ body {
 
 
 
-.zyyo-right {
+.Sharon-right {
     width: calc(100% - 230px);
     display: flex;
     padding: 20px;
@@ -608,7 +616,6 @@ footer {
 }
 
 @media (min-width: 800px) {
-
     .index-logo {
         display: none;
     }
@@ -618,28 +625,22 @@ footer {
     .a {
         width: calc(50% - 10px);
     }
-
     .b {
-
         width: calc(50% - 10px);
-
-
     }
 }
 
 @media (max-width: 800px) {
-    .zyyo-left {
+    .Sharon-left {
         display: none;
     }
 
     .a .projectItemRight {
         display: none;
-
     }
 
     .a .projectItemRight img {
         display: none;
-
     }
 
     .a .projectItemLeft {
@@ -647,10 +648,7 @@ footer {
     }
 
     .a {
-
         width: calc(50% - 10px);
-
-
     }
 
     .b {
@@ -659,14 +657,11 @@ footer {
         width: calc(100% - 20px);
     }
 
-
     .projectList {
         gap: 20px;
     }
 
-
-
-    .zyyo-right {
+    .Sharon-right {
         width: 100%;
     }
 
@@ -680,21 +675,17 @@ footer {
 
     .welcome {
         font-size: 48px;
-
     }
-
 
     .projectItemLeft p {
         font-size: 13px;
     }
 
     .projectItemLeft h1 {
-
         font-size: 18px;
     }
 
     .projectItem:hover h1 {
-
         font-size: 20px;
 
     }
@@ -714,23 +705,7 @@ footer {
     .skill #skillPc {
         display: none;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
-
-
-
 
 
 .tc {
@@ -774,9 +749,7 @@ footer {
 }
 
 .tc-main.active {
-
     transform: translateY(0) scale(1);
-
 }
 
 
