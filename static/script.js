@@ -88,35 +88,12 @@ function getCookie(name) {
     return null;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 document.addEventListener('DOMContentLoaded', function () {
-
-
-
-
-
 
     var html = document.querySelector('html');
     var themeState = getCookie("themeState") || "Light";
     var svgItems = document.getElementsByTagName("svg");
     var tanChiShe = document.getElementById("tanChiShe");
-
-
-
-
 
 
     function changeTheme(theme) {
@@ -139,11 +116,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 
-
-
-
-
-
     var Checkbox = document.getElementById('myonoffswitch')
     Checkbox.addEventListener('change', function () {
         if (themeState == "Dark") {
@@ -156,7 +128,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 
-
     if (themeState == "Dark") {
         Checkbox.checked = false;
     }
@@ -164,22 +135,7 @@ document.addEventListener('DOMContentLoaded', function () {
     changeTheme(themeState);
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    var pageLoading = document.querySelector("#zyyo-loading");
+    var pageLoading = document.querySelector("#Sharon-loading");
     setTimeout(function () {
         pageLoading.style.opacity = '0';
 
@@ -228,3 +184,89 @@ document.addEventListener('DOMContentLoaded', function () {
     })();
 });
 
+
+// 鼠标拖尾
+(function fairyDustCursor() {
+    var particles = [];
+
+    function init() {
+        bindEvents();
+        loop();
+    }
+
+    function bindEvents() {
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('touchmove', onTouchMove);
+        document.addEventListener('touchstart', onTouchMove);
+    }
+
+    function onTouchMove(e) {
+        if (e.touches.length > 0) {
+            for (var i = 0; i < e.touches.length; i++) {
+                addParticle(e.touches[i].clientX + window.scrollX, e.touches[i].clientY + window.scrollY);
+            }
+        }
+    }
+
+    function onMouseMove(e) {
+        addParticle(e.clientX + window.scrollX, e.clientY + window.scrollY);
+    }
+
+    function addParticle(x, y) {
+        var particle = new Particle();
+        particle.init(x, y);
+        particles.push(particle);
+    }
+
+    function updateParticles() {
+        for (var i = particles.length - 1; i >= 0; i--) {
+            particles[i].update();
+            if (particles[i].lifeSpan < 0 || particles[i].opacity <= 0) {
+                particles[i].remove();
+                particles.splice(i, 1);
+            }
+        }
+    }
+
+    function loop() {
+        requestAnimationFrame(loop);
+        updateParticles();
+    }
+
+    function Particle() {
+        this.lifeSpan = 200; // 更长的生命周期
+        this.opacity = 1;
+        this.velocity = {x: (Math.random() < 0.5 ? -1 : 1) * (Math.random() / 2), y: -2}; // 减慢上浮速度
+        this.pos = {x: 0, y: 0};
+
+        this.init = function(x, y) {
+            this.pos.x = x;
+            this.pos.y = y;
+
+            this.element = document.createElement('img');
+            this.element.src = 'static/img/bubble.png';
+            this.element.style.position = 'absolute';
+            this.element.style.width = '10px'; // 减小泡泡尺寸
+            this.element.style.height = '10px';
+            this.element.style.opacity = this.opacity.toString();
+            document.body.appendChild(this.element);
+        };
+
+        this.update = function() {
+            this.lifeSpan--;
+            this.opacity -= 0.005; // 减缓透明度减少的速度
+            this.pos.y += this.velocity.y;
+            this.pos.x += this.velocity.x;
+
+            this.element.style.top = this.pos.y + 'px';
+            this.element.style.left = this.pos.x + 'px';
+            this.element.style.opacity = this.opacity.toString();
+        };
+
+        this.remove = function() {
+            document.body.removeChild(this.element);
+        };
+    }
+
+    init();
+})();
