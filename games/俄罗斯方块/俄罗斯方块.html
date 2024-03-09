@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../../static/img/logo.png">
+    <title>俄罗斯方块 - Sharon</title>
+    <style>
+        @font-face {
+            font-family: "YSHAOSHENTI";
+            src: url("../../static/font/YSHAOSHENTI-2.TTF") format("truetype");
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+            font-family: "YSHAOSHENTI", sans-serif;
+        }
+        #main-container {
+            display: flex; /* 主容器使用flex布局 */
+            justify-content: center;
+            align-items: start;
+        }
+        #game-container {
+            text-align: center;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        #tetris-canvas {
+            border-radius: 10px;
+            border: 2px solid #333;
+            background-color: #e0e0e0;
+            width: 360px;
+            height: 720px;
+        }
+        #next-piece-container {
+            width: 200px;
+            height: 200px;
+            border: 2px solid #333;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #next-piece-canvas {
+            width: 100px;
+            height: 100px;
+        }
+        #button-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            width: 80px; /* 调整按钮宽度 */
+            height: 40px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            margin: 0 10px; /* 调整按钮间距 */
+            font-family: "YSHAOSHENTI", sans-serif;
+            display: flex; /* 启用Flexbox */
+            justify-content: center; /* 水平居中 */
+            align-items: center; /* 垂直居中 */
+            text-align: center;
+            transition: background-color 0.3s ease;
+            margin: 10px; /* 修改了margin的值，确保正确的间距 */
+        }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+        #side-panel {
+            display: flex;
+            flex-direction: column; /* 垂直排列子元素 */
+            align-items: center; /* 中心对齐子元素 */
+            margin-left: 20px; /* 与游戏面板的间距 */
+        }
+
+        #score-display {
+            text-align: center;
+            padding: 10px;
+            margin-top: 20px;
+            font-size: 24px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            width: 200px; /* 与下一个方块容器宽度相同 */
+        }
+    </style>
+</head>
+<body>   
+    <div id="main-container">
+        <div id="game-container">
+            <canvas id="tetris-canvas" width="360" height="720"></canvas>
+            <div id="button-container">
+                <button id="btn-left" class="button">左</button>
+                <button id="btn-right" class="button">右</button>
+                <button id="btn-up" class="button">旋转方向</button>
+                <button id="btn-down" class="button">下</button>
+            </div>
+            <div id="controls-container">
+                <p>玩法：左右键来移动，下键加速，上键旋转方块</p>
+            </div>
+        </div>
+        <div id="side-panel"> <!-- 新增加的包裹容器 -->
+            <div id="next-piece-container">
+                <canvas id="next-piece-canvas" width="80" height="80"></canvas>
+            </div>
+            <div id="score-display">得分: <span id="score">0</span></div>
+            <div id="button-container">
+                <a href="../../index.html" id="btn" class="button" target="_blank">返回主页</a>
+            </div>
+        </div>
+    </div>
+    <script>
+        const nextPieceCanvas = document.getElementById('next-piece-canvas');
+        const nextPieceContext = nextPieceCanvas.getContext('2d');
+        nextPieceContext.scale(20, 20);
+        const canvas = document.getElementById('tetris-canvas');
+        const context = canvas.getContext('2d');
+        context.scale(30,30); // 更新缩放比例以适应新的画布尺寸
+        let gameOver = false;
+        let move = 0;
+
+        const colors = [
+            null,    // 0: no color
+            '#FF0D72',
+            '#0DC2FF',
+            '#0DFF72',
+            '#F538FF',
+            '#FF8E0D',
+            '#FFE138',
+            '#3877FF',
+            'black', // 8: black
+            // 'white' // 9: white (如果需要)
+        ];
+
+        let dropCounter = 0;
+        let dropInterval = 1000;
+        let lastTime = 0;
+        let score = 0;
+        const arena = createMatrix(12, 20);
+        
+        const player = {
+            pos: {x: 0, y: 0},
+            matrix: null,
+            score: 0,
+            nextMatrix: null,
+        };
+
+        function createMatrix(w, h) {
+            const matrix = [];
+            h += 4;// 增加四排
+            while (h--) { 
+                matrix.push(new Array(w).fill(0));
+            }
+            return matrix;
+        }
+
+
+        function createPiece(type) {
+            if (type === 'T') {
+                return [
+                    [0, 0, 0],
+                    [1, 1, 1],
+                    [0, 1, 0],
+                ];
+            } else if (type === 'O') {
+                return [
+                    [2, 2],
+                    [2, 2],
+                ];
+            } else if (type === 'L') {
+                return [
+                    [0, 3, 0],
+                    [0, 3, 0],
+                    [0, 3, 3],
+                ];
+            } else if (type === 'J') {
+                return [
+                    [0, 4, 0],
+                    [0, 4, 0],
+                    [4, 4, 0],
+                ];
+            } else if (type === 'I') {
+                return [
+                    [0, 5, 0, 0],
+                    [0, 5, 0, 0],
+                    [0, 5, 0, 0],
+                    [0, 5, 0, 0],
+                ];
+            } else if (type === 'S') {
+                return [
+                    [0, 6, 6],
+                    [6, 6, 0],
+                    [0, 0, 0],
+                ];
+            } else if (type === 'Z') {
+                return [
+                    [7, 7, 0],
+                    [0, 7, 7],
+                    [0, 0, 0],
+                ];
+            }
+        }
+
+        function drawMatrix(matrix, offset, override = false) {
+            matrix.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0 || override) {
+                        context.fillStyle = colors[value];
+                        context.fillRect(x + offset.x, y + offset.y, 1, 1);
+                    }
+                    context.strokeStyle = 'black';
+                    context.lineWidth = 0.01;
+                    context.strokeRect(x + offset.x, y + offset.y, 1, 1);
+                });
+            });
+        }
+
+        function draw() {
+            context.fillStyle = '#e0e0e0';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            drawMatrix(arena, {x: 0, y: 0});
+            drawMatrix(player.matrix, player.pos);
+        }
+
+        function merge(arena, player) {
+            player.matrix.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0 && y + player.pos.y < arena.length) {
+                        arena[y + player.pos.y][x + player.pos.x] = value;
+                    }
+                });
+            });
+        }
+
+        function collide(arena, player) {
+            const [m, o] = [player.matrix, player.pos];
+            for (let y = 0; y < m.length; ++y) {
+                for (let x = 0; x < m[y].length; ++x) {
+                    if (m[y][x] !== 0 &&
+                    (arena[y + o.y] &&
+                        arena[y + o.y][x + o.x]) !== 0) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function playerMove(dir) {
+            if (gameOver) return;
+            player.pos.x += dir;
+            if (collide(arena, player)) {
+                player.pos.x -= dir;
+            }
+        }
+
+        function playerDrop() {
+            player.pos.y++;
+            if (collide(arena, player)) {
+                player.pos.y--;
+                merge(arena, player);
+                playerReset();
+                arenaSweep();
+                dropCounter = 0;
+            } else {
+                dropCounter = 0; // Reset drop counter only if there's no collision
+            }
+        }
+
+        function playerRotate(dir) {
+            if (gameOver) return;
+            const pos = player.pos.x;
+            let offset = 1;
+            rotate(player.matrix, dir);
+            while (collide(arena, player)) {
+                player.pos.x += offset;
+                offset = -(offset + (offset > 0 ? 1 : -1));
+                if (offset > player.matrix[0].length) {
+                    rotate(player.matrix, -dir);
+                    player.pos.x = pos;
+                    return;
+                }
+            }
+        }
+
+        function rotate(matrix, dir) {
+            for (let y = 0; y < matrix.length; ++y) {
+                for (let x = 0; x < y; ++x) {
+                    [
+                        matrix[x][y],
+                        matrix[y][x],
+                    ] = [
+                        matrix[y][x],
+                        matrix[x][y],
+                    ];
+                }
+            }
+
+            if (dir > 0) {
+                matrix.forEach(row => row.reverse());
+            } else {
+                matrix.reverse();
+            }
+        }
+        function gameOverAnimation() {
+            gameOver = true;
+            let row = arena.length - 1; // 从最底部开始
+
+            // 向下添加一排全零的格子，然后绘制整个游戏区域
+            arena.unshift(new Array(12).fill(0));
+
+            function blackenRow() {
+                if (row >= 0) {
+                    arena[row].fill(8); // 8代表黑色
+                    drawMatrix(arena, { x: 0, y: -5 }, true); // 考虑到额外的四行
+                    row--;
+                    setTimeout(blackenRow, 50);
+                } else {
+                    setTimeout(whitenRows, 500); // 延迟调用whitenRows函数以覆盖整个画布
+                    drawMatrix(arena, { x: 0, y: -1 }, true);
+                }
+            }
+            blackenRow();
+        }
+        function whitenRows() {
+            let row = 0;
+
+            function whitenRow() {
+                if (row < arena.length) {
+                    arena[row].fill(0); // 0代表无颜色/白色
+                    drawMatrix(arena, {x: 0, y: -4}, true); // 考虑到额外的四行
+                    row++;
+                    setTimeout(whitenRow, 50);
+                } else {
+                    gameOver = false;
+                    // 重置玩家状态
+                    playerReset();
+                }
+            }
+
+            whitenRow();
+        }
+
+        function playerReset() {
+            const pieces = 'TOLJISZ';
+            player.matrix = player.nextMatrix || createPiece(pieces[pieces.length * Math.random() | 0]);
+            player.pos.y = 0;
+            player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
+            player.nextMatrix = createPiece(pieces[pieces.length * Math.random() | 0]); // 生成新的下一个方块
+            drawNextPiece(); // 绘制下一个方块
+            if (collide(arena, player)) {
+                arena.forEach(row => row.fill(0));
+                player.score = 0;
+                updateScore();
+                dropInterval = 1000; // 重置下落间隔
+            }
+        }
+
+        function drawNextPiece() {
+            nextPieceContext.clearRect(0, 0, nextPieceCanvas.width, nextPieceCanvas.height);
+            nextPieceCanvas.width = 200;
+            nextPieceCanvas.height = 200;
+            nextPieceContext.fillStyle = '#e0e0e0';
+            nextPieceContext.fillRect(0, 0, nextPieceCanvas.width, nextPieceCanvas.height);
+            
+            // 计算居中位置
+            const pieceWidth = player.nextMatrix[0].length * 50;
+            const pieceHeight = player.nextMatrix.length * 50;
+            const offsetX = (nextPieceCanvas.width / 2 - pieceWidth / 2) / 50;
+            const offsetY = (nextPieceCanvas.height / 2 - pieceHeight / 2) / 50;
+
+            player.nextMatrix.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0) {
+                        nextPieceContext.fillStyle = colors[value];
+                        nextPieceContext.fillRect((x + offsetX) * 50, (y + offsetY) * 50, 50 - 1, 50 - 1);
+                        nextPieceContext.strokeStyle = 'black';
+                        nextPieceContext.strokeRect((x + offsetX) * 50, (y + offsetY) * 50, 50 - 1, 50 - 1);
+                    }
+                });
+            });
+        }
+
+        function arenaSweep() {
+            let rowCount = 0;
+            outer: for (let y = arena.length - 1; y >= 0; --y) {
+                for (let x = 0; x < arena[y].length; ++x) {
+                    if (arena[y][x] === 0) {
+                        continue outer;
+                    }
+                }
+                // 清除整行的格子，包括最下面一排和图形内的格子
+                const row = arena.splice(y, 1)[0].fill(0);
+                arena.unshift(row);
+                ++y;
+                dropInterval += 50;
+                rowCount++;
+            }
+
+            if (rowCount > 0) {
+                player.score += Math.pow(2, rowCount - 1) * 100;
+                updateScore();
+            }
+        }
+        function updateScore() {
+            document.getElementById('score').innerText = player.score;
+        }
+
+        function update(time = 0) {
+            const deltaTime = time - lastTime;
+            lastTime = time;
+
+            dropCounter += deltaTime;
+            if (dropCounter > dropInterval) {
+                playerDrop();
+            }
+
+            draw();
+
+            requestAnimationFrame(update);
+        }
+
+        document.addEventListener('keydown', event => {
+            if (event.keyCode === 37) {
+                playerMove(-1);
+            } else if (event.keyCode === 39) {
+                playerMove(1);
+            } else if (event.keyCode === 40) {
+                playerDrop();
+            } else if (event.keyCode === 38) {
+                playerRotate(1);
+            }
+        });
+        const btnLeft = document.getElementById('btn-left');
+        const btnRight = document.getElementById('btn-right');
+        const btnUp = document.getElementById('btn-up');
+        const btnDown = document.getElementById('btn-down');
+
+        btnLeft.addEventListener('click', () => playerMove(-1));
+        btnRight.addEventListener('click', () => playerMove(1));
+        btnUp.addEventListener('click', () => playerRotate(1));
+        btnDown.addEventListener('click', () => playerDrop());
+        playerReset();
+        updateScore();
+        update();
+    </script>
+</body>
+</html>
