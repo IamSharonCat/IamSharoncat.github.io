@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>射击图形游戏</title>
+    <style>
+        @font-face {
+            font-family: "YSHAOSHENTI";
+            src: url("../../static/font/YSHAOSHENTI-2.TTF") format("truetype");
+        }
+        body {
+            text-align: center; /* 居中对齐页面内容 */
+            background-color: #ffffd6;
+            font-family: "YSHAOSHENTI", sans-serif;
+        }
+        canvas {
+            background-color: #FFFFFF;
+            border: 1px solid #000;
+            display: block;
+            margin: 0 auto; /* 居中Canvas */
+        }
+        .floating-score {
+            position: absolute;
+            text-align: center;
+            font-weight: bold;
+            width: 60px;
+            margin-left: -30px;
+            transition: all 1s ease-out;
+            color: black;
+        }
+        .score-1 { color: black; }
+        .score-2 { color: red; }
+        .score-3 { color: gold; }
+        .score-negative { color: red; } /* 或您选择的颜色 */
+        #startButton, #modeSwitch{
+            position: absolute;
+            margin: auto;
+            padding: 10px 20px;
+            display: block;
+        }
+        #startButton {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 10px 20px;
+            margin-top: 10px;
+        }
+        #closeButton {
+            position: absolute;
+            top: 50%; /* 位置调整 */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none; /* 初始为隐藏 */
+            padding: 10px 20px;
+        }
+        #endGameButton {
+            display: none; /* 初始隐藏 */
+            margin: 20px auto; /* 在Canvas下方居中显示 */
+            padding: 10px 20px; /* 与其他按钮一致的内边距 */
+        }
+        #modeSwitch {
+            top: 70%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            margin-top: 10px;
+        }
+        #closeButton {
+            top: 80%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        #gameOverDisplay, #timerDisplay, #scoreDisplay, #gameInfo, #messageArea, #messageList, #messageContent {
+            position: absolute;
+            display: none;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+        }
+        #gameOverDisplay {
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: black;
+        }
+        #timerDisplay {
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            color: blue;
+        }
+        #scoreDisplay {
+            top: 5px;
+            right: 10px;
+            font-size: 24px;
+            color: black;
+        }
+        #gameInfo {
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 600px;
+            width: 90%;
+        }
+        #gameInfo h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 50px;
+        }
+        #gameRules {
+            text-align: left;
+        }
+        #messageIcon {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            width: 50px;
+            height: 50px;
+        }
+        #messageArea, #messageList, #messageContent {
+            bottom: 70px;
+            left: 10px;
+            max-width: 600px;
+            width: 90%;
+        }
+        #closeMessage, #closeList, #closeContent {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: red;
+            color: black;
+            border: none;
+            border-radius: 5px;
+            width: 40px;
+            height: 40px;
+            font-size: 30px;
+            line-height: 10px;
+            text-align: center;
+            display: flex;
+            align-items: center; /* 垂直居中 */
+            justify-content: center; /* 水平居中 */
+            cursor: pointer;
+        }
+        #messageContent p {
+            margin-bottom: 10px;
+        }
+        .button-container {
+            display: flex;
+            justify-content: center; /* 水平居中按钮 */
+            margin-top: 20px; /* 在Canvas和按钮之间添加一些空间 */
+        }
+        button {
+            margin: 0 10px; /* Space between buttons */
+            padding: 10px 20px; /* Button padding */
+        }
+        #messageList ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        #messageList ul li {
+            border: 1px solid #000;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 5px 0;
+            cursor: pointer;
+        }
+
+        #messageList ul li:hover {
+            background-color: #e0e0e0; /* 鼠标悬停时的背景颜色 */
+            transition: background-color 0.3s ease-in-out;
+        }
+        .button-hover {
+            transition: background-color 0.3s ease-in-out;
+            background-color: #FFFF99; /* 刚开始的浅黄色 */
+        }
+
+        .button-hover:hover {
+            background-color: #FFD700; /* 鼠标悬停时的艳黄色 */
+        }
+    </style>
+</head>
+<body>
+    <div id="timerDisplay">剩余时间: 60</div>
+    <div id="scoreDisplay">得分: 0</div>
+    <div id="gameInfo" style="display: none;">
+        <h1>射击图形!</h1>
+        <div id="gameRules">
+            <ul>
+                <li><strong>目标</strong>：射击不同图形获得分数。</li>
+                <li><strong>无限模式</strong>：无时间限制。</li>
+                <li><strong>挑战模式</strong>：60秒时间限制。</li>
+                <li><strong>图形分值</strong>：圆形  1分，矩形  2分，三角形  3分。</li>
+                <li><strong>最高纪录</strong>：您的最高纪录，由于存储效果在测试中，所以可能有时候您的最高纪录会归零</li>
+                <li>本游戏的图形发射点会左右移动</li>
+            </ul>
+        </div>
+    </div>
+    <canvas id="gameCanvas" width="600" height="800"></canvas>
+    <button id="startButton" class="button-hover">开始游戏</button>
+    <button id="modeSwitch" class="button-hover">切换至挑战模式</button>
+    <a href="../../index.html" class="button-hover">返回主页</a>
+    <div class="button-container">
+        <button id="endGameButton" class="button-hover">结束游戏</button>
+    </div>
+    <button id="closeButton" class="button-hover">关闭</button>
+    <img id="messageIcon" src="消息.png">
+    <div id="messageArea">
+        <!-- 消息列表 -->
+        <div id="messageList">
+            <button id="closeList">×</button> <!-- 消息列表关闭按钮 -->
+            <ul>
+                <li onclick="showMessage('message1')">版本信息</li>
+                <li onclick="showMessage('message2')">联系管理员</li>
+                <!-- 更多消息标题 -->
+            </ul>
+        </div>
+        <!-- 消息内容 -->
+        <div id="messageContent">
+            <button id="closeContent">×</button> <!-- 消息内容区域的关闭按钮 -->
+            <div id="message1" class="message" style="display:none;">
+                <h3 style="font-size: 1.5em; color: black;">版本信息</h3>
+                <p style="font-size: 0.8em; color: gray;">管理员</p>
+                <p style="font-size: 0.8em; color: gray;">初始发布:2024.1.31 21:00    最新更新:2024.1.31 22:13</p>
+                <p style="font-size: 1em; color: black;">v1.0.0 初始版本，将pygame译为HTML、CSS和JavaScript</p>
+                <p style="font-size: 1em; color: black;">v1.0.1 优化游戏，添加了不同图形不同得分的功能</p>
+                <p style="font-size: 1em; color: black;">v1.0.2 添加得分后可以显示+1/+2/+3的功能</p>
+                <p style="font-size: 1em; color: black;">v2.0.0 添加挑战模式、倒计时</p>
+                <p style="font-size: 1em; color: black;">v2.1.0 添加游戏开始界面和结束界面</p>
+                <p style="font-size: 1em; color: black;">v2.1.1 添加最高纪录</p>
+                <p style="font-size: 1em; color: black;">v2.1.2 游戏开始界面添加标题、玩法</p>
+                <p style="font-size: 1em; color: black;">v2.1.3 调整按钮位置</p>
+                <p style="font-size: 1em; color: black;">v2.1.4 让图形发射点会移动</p>
+                <p style="font-size: 1em; color: black;">v3.0.0 添加消息功能</p>
+                <p style="font-size: 1em; color: black;">v3.0.1 维护消息功能</p>
+                <p style="font-size: 1em; color: black;">v3.0.2 增加一些CSS</p>
+                <p style="font-size: 1em; color: orange;">v3.0.3 增加炸弹功能</p>
+            </div>
+            <div id="message2" class="message" style="display:none;">
+                <h3 style="font-size: 1.5em; color: black;">联系管理员</h3>
+                <p style="font-size: 0.8em; color: gray;">管理员</p>
+                <p style="font-size: 0.8em; color: gray;">初始发布:2024.1.31 22:40    最新更新:2024.1.31 22:40</p>
+                <p style="font-size: 1em; color: black;">如果您有任何疑问、建议或想要发布的消息，可以联系邮箱<a href="mailto:iamicesharon@163.com">iamicesharon@163.com</a></p>
+            </div>
+            <!-- 更多消息内容 -->
+        </div>
+    </div>    
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const modeSwitch = document.getElementById('modeSwitch');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const WINDOW_WIDTH = 600;
+        const WINDOW_HEIGHT = 800;
+        let frame = 0;
+        let count = 0;
+        let score = 0;
+        let shapeList = [];
+        let mode = "无限"; // 游戏模式
+        let timeLeft = 60;
+        let gameStarted = false;
+        let timer;
+        let requestId;
+        let launchPointX = WINDOW_WIDTH / 2; // 发射点的初始横向位置
+        let launchSpeed = 2; // 发射点的移动速度
+        let highScoreInfinite = localStorage.getItem('highScoreInfinite') || 0;
+        let highScoreChallenge = localStorage.getItem('highScoreChallenge') || 0;
+        let bombImage = new Image();
+        bombImage.src = '炸弹.png'; // 替换为炸弹图像的路径
+        bombImage.onload = function() {
+            // 图像加载完成后，可以开始游戏
+        };
+
+        document.getElementById('closeButton').addEventListener('click', function() {
+            document.getElementById('gameOverDisplay').style.display = 'none';
+            this.style.display = 'none';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            shapeList = [];
+            // 显示开始游戏按钮和模式切换按钮
+            document.getElementById('startButton').style.display = 'block';
+            document.getElementById('modeSwitch').style.display = 'block';
+            // 添加以下两行代码来显示游戏信息和标题
+            document.getElementById('gameInfo').style.display = 'block'; // 显示游戏信息
+        });
+
+
+        class Shape {
+            constructor(position, speed, radius, kind, isBomb = false) {
+                this.position = { x: position[0], y: position[1] };
+                this.speed = { x: speed[0], y: speed[1] };
+                this.radius = radius;
+                this.gravity = 0.5;
+                this.remove = false;
+                this.kind = kind;
+                this.isBomb = isBomb;
+                this.color = this.isBomb ? 'black' : `rgb(${randomInt(0, 255)}, ${randomInt(0, 255)}, ${randomInt(0, 255)})`;
+            }
+
+            draw() {
+                if (this.isBomb) {
+                    const bombAspectRatio = 201 / 340;
+                    const bombHeight = this.radius * 2;
+                    const bombWidth = bombHeight * bombAspectRatio;
+                    ctx.drawImage(bombImage, this.position.x - bombWidth / 2, this.position.y - bombHeight / 2, bombWidth, bombHeight);
+                } else {
+                    ctx.fillStyle = this.color;
+                    switch (this.kind) {
+                        case 1: // Circle
+                            ctx.beginPath();
+                            ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2);
+                            ctx.fill();
+                            break;
+                        case 2: // Rectangle
+                            ctx.fillRect(this.position.x - this.radius / 2, this.position.y - this.radius / 2, this.radius, this.radius);
+                            break;
+                        case 3: // Triangle
+                            ctx.beginPath();
+                            ctx.moveTo(this.position.x, this.position.y - this.radius / 2);
+                            ctx.lineTo(this.position.x - this.radius / 2, this.position.y + this.radius / 2);
+                            ctx.lineTo(this.position.x + this.radius / 2, this.position.y + this.radius / 2);
+                            ctx.closePath();
+                            ctx.fill();
+                            break;
+                    }
+                }
+            }
+
+            hit(pos) {
+                return Math.abs(pos.x - this.position.x) < this.radius && Math.abs(pos.y - this.position.y) < this.radius;
+            }
+
+            update() {
+                this.speed.y += this.gravity;
+                this.position.x += this.speed.x;
+                this.position.y += this.speed.y;
+                if (this.position.y - this.radius > WINDOW_HEIGHT) {
+                    this.remove = true;
+                }
+            }
+        }
+
+        function startChallengeMode() {
+            timeLeft = 60; // 重置时间
+            timerDisplay.style.display = 'block'; // 显示计时器
+            updateTimerDisplay();
+            timer = setInterval(function() {
+                timeLeft--;
+                updateTimerDisplay();
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function newCircle(cooldown) {
+            if (frame - count > cooldown) {
+                let kind = randomInt(1, 100);
+                let shapeType, shapeSize, isBomb = false;
+
+                // 根据概率生成形状或炸弹
+                if (kind <= 50) {
+                    shapeType = 1;
+                    shapeSize = 30;
+                } else if (kind <= 85) {
+                    shapeType = randomInt(2, 3);
+                    shapeSize = shapeType === 2 ? 50 : 40;
+                } else {
+                    isBomb = true;
+                    shapeType = 4; // 假设 4 代表炸弹
+                    if (kind > 85) { // 假设 15% 的概率生成炸弹
+                        isBomb = true;
+                        shapeType = 4; // 假定 4 代表炸弹
+                        if (kind <= 95) {
+                            shapeSize = 20; // 小炸弹
+                        } else if (kind <= 98) {
+                            shapeSize = 30; // 中炸弹
+                        } else {
+                            shapeSize = 40; // 大炸弹
+                        }
+                    }
+                }
+
+                shapeList.push(new Shape([launchPointX, WINDOW_HEIGHT - 20],
+                                        [randomInt(-10, 10), -25],
+                                        shapeSize, shapeType, isBomb));
+                count = frame;
+            }
+        }
+
+        function hitCircle(pos) {
+            shapeList.forEach(shape => {
+                if (shape.hit(pos)) {
+                    let points = 0;
+                    if (shape.isBomb) {
+                        switch (shape.radius) {
+                            case 20: points = -1; break; // 小炸弹
+                            case 30: points = -2; break; // 中炸弹
+                            case 40: points = -3; break; // 大炸弹
+                        }
+                    } else {
+                        switch (shape.kind) {
+                            case 1: points = 1; break; // 圆形
+                            case 2: points = 2; break; // 矩形
+                            case 3: points = 3; break; // 三角形
+                        }
+                    }
+                    score += points;
+                    showFloatingScore(pos, points);
+                    shape.remove = true;
+                }
+            });
+            scoreDisplay.textContent = `得分: ${score}`;
+        }
+
+        function showFloatingScore(position, points) {
+            const floatingScore = document.createElement('div');
+            floatingScore.classList.add('floating-score');
+            if (points < 0) {
+                floatingScore.classList.add('score-negative'); // 添加负分数的样式类
+            } else {
+                floatingScore.classList.add(`score-${points}`);
+            }
+            floatingScore.textContent = points > 0 ? `+${points}` : `${points}`; // 负分数不添加加号
+            const canvasRect = canvas.getBoundingClientRect();
+            floatingScore.style.left = `${canvasRect.left + position.x}px`;
+            floatingScore.style.top = `${canvasRect.top + position.y}px`;
+            document.body.appendChild(floatingScore);
+            setTimeout(() => {
+                floatingScore.style.opacity = 0;
+                floatingScore.style.transform = `translateY(-50px)`;
+                setTimeout(() => floatingScore.remove(), 1000);
+            }, 0);
+        }
+
+
+        function randomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function startTimer() {
+            timerDisplay.style.display = "block";
+            timeLeft = 60;
+            updateTimerDisplay();
+            timer = setInterval(function() {
+                timeLeft--;
+                updateTimerDisplay();
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            timerDisplay.textContent = `${timeLeft}秒`;
+        }
+
+        function stopTimer() {
+            clearInterval(timer);
+            timerDisplay.style.display = 'none';
+        }
+
+        modeSwitch.addEventListener('click', function() {
+            if (mode === "无限") {
+                mode = "挑战";
+                this.textContent = "切换至无限模式";
+            } else {
+                mode = "无限";
+                this.textContent = "切换至挑战模式";
+                stopTimer();
+                score = 0;
+                scoreDisplay.textContent = `得分: ${score}`;
+            }
+            shapeList = [];
+            if (gameStarted) {
+                requestId = requestAnimationFrame(gameLoop);
+            }
+        });
+
+        canvas.addEventListener('mousedown', function(event) {
+            const rect = canvas.getBoundingClientRect();
+            const pos = {
+                x: event.clientX - rect.left,
+                y: event.clientY - rect.top
+            };
+            hitCircle(pos);
+        });
+
+        function gameLoop() {
+            if (!gameStarted) return;
+            frame++;
+            ctx.clearRect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+            // 更新发射点的位置
+            launchPointX += launchSpeed;
+            if (launchPointX > WINDOW_WIDTH - 30 || launchPointX < 30) {
+                launchSpeed *= -1; // 当发射点接近边缘时改变移动方向
+            }
+
+            if (mode === "无限" || (mode === "挑战" && timeLeft > 0)) {
+                newCircle(10);
+            }
+
+            shapeList = shapeList.filter(shape => !shape.remove);
+            shapeList.forEach(shape => {
+                shape.update();
+                shape.draw();
+            });
+        }
+
+        document.getElementById('startButton').addEventListener('click', function() {
+            gameStarted = true;
+            score = 0; // 每次开始游戏时重置得分
+            scoreDisplay.textContent = `得分: ${score}`;
+            this.style.display = 'none'; // 隐藏开始游戏按钮
+            document.getElementById('endGameButton').style.display = 'block'; // 显示结束游戏按钮
+            document.getElementById('modeSwitch').style.display = 'none'; // 隐藏模式切换按钮
+            document.getElementById('gameInfo').style.display = 'none'; // 隐藏游戏信息
+            if (mode === "挑战") {
+                startChallengeMode();
+                timerDisplay.style.display = 'block';
+            }
+            document.getElementById('messageIcon').style.display = 'block'; // 显示消息图标
+            requestId = requestAnimationFrame(gameLoop);
+        });
+        document.getElementById('messageIcon').addEventListener('click', function() {
+            document.getElementById('messageArea').style.display = 'block';
+        });
+        function endGame() {
+            clearInterval(timer);
+            cancelAnimationFrame(requestId);
+            gameStarted = false;
+
+            let newRecord = false;
+            let recordMessage = '';
+
+            if (mode === "无限" && score > highScoreInfinite) {
+                highScoreInfinite = score;
+                localStorage.setItem('highScoreInfinite', highScoreInfinite);
+                newRecord = true;
+                recordMessage = `新纪录！无限模式最高得分: ${highScoreInfinite}`;
+            } else if (mode === "挑战" && score > highScoreChallenge) {
+                highScoreChallenge = score;
+                localStorage.setItem('highScoreChallenge', highScoreChallenge);
+                newRecord = true;
+                recordMessage = `新纪录！挑战模式最高得分: ${highScoreChallenge}`;
+            }
+
+            showGameOverDisplay(newRecord, recordMessage);
+            document.getElementById('startButton').style.display = 'none';
+            document.getElementById('modeSwitch').style.display = 'none';
+            document.getElementById('endGameButton').style.display = 'none';
+            document.getElementById('closeButton').style.display = 'block'; // 显示关闭按钮
+        }
+
+        function showGameOverDisplay(newRecord, recordMessage) {
+            let gameOverDisplay = document.getElementById('gameOverDisplay');
+            if (!gameOverDisplay) {
+                gameOverDisplay = document.createElement('div');
+                gameOverDisplay.id = 'gameOverDisplay';
+                gameOverDisplay.style.position = 'absolute';
+                gameOverDisplay.style.top = '40%';
+                gameOverDisplay.style.left = '50%';
+                gameOverDisplay.style.transform = 'translate(-50%, -50%)';
+                gameOverDisplay.style.textAlign = 'center';
+                gameOverDisplay.style.fontSize = '24px';
+                document.body.appendChild(gameOverDisplay);
+            }
+            gameOverDisplay.innerHTML = `得分: ${score}<br>`;
+            gameOverDisplay.style.color = 'black';
+
+            if (newRecord) {
+                const recordText = document.createElement('div');
+                recordText.textContent = recordMessage;
+                recordText.style.color = 'gold';
+                gameOverDisplay.appendChild(recordText);
+            }
+
+            gameOverDisplay.style.display = 'block';
+        }
+        document.getElementById('endGameButton').addEventListener('click', function() {
+            endGame(); // Call the end game function
+            this.style.display = 'none'; // Hide the end game button
+        });
+
+        setInterval(gameLoop, 1000 / 50); // 使用setInterval代替requestAnimationFrame
+        window.onload = function() {
+            if (!gameStarted) {
+                document.getElementById('modeSwitch').style.display = 'block';
+                document.getElementById('gameInfo').style.display = 'block'; // 显示游戏信息
+            }
+            document.getElementById('messageIcon').addEventListener('click', function() {
+                document.getElementById('messageArea').style.display = 'block';
+                document.getElementById('messageList').style.display = 'block'; // 显示消息列表
+                document.getElementById('messageContent').style.display = 'none'; // 隐藏消息内容
+            });
+
+            document.getElementById('closeMessage').addEventListener('click', function() {
+                document.getElementById('messageArea').style.display = 'none';
+            });
+        };
+        document.getElementById('messageIcon').addEventListener('click', function() {
+            document.getElementById('messageArea').style.display = 'block';
+            document.getElementById('messageList').style.display = 'block';
+            document.getElementById('messageContent').style.display = 'none';
+        });
+
+        document.getElementById('closeList').addEventListener('click', function() {
+            document.getElementById('messageArea').style.display = 'none';
+        });
+
+        document.getElementById('closeContent').addEventListener('click', function() {
+            document.getElementById('messageContent').style.display = 'none';
+            document.getElementById('messageList').style.display = 'block';
+        });
+
+        function showMessage(messageId) {
+            const messages = document.querySelectorAll('.message');
+            messages.forEach(msg => msg.style.display = 'none');
+            document.getElementById(messageId).style.display = 'block';
+            document.getElementById('messageList').style.display = 'none';
+            document.getElementById('messageContent').style.display = 'block';
+        }
+        function hideMessage() {
+            document.getElementById('messageArea').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
