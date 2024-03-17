@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>随机笑话</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.1.2/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="text-center">
+        <div id="joke" class="mb-4 p-4 bg-white rounded shadow text-lg">Loading joke...</div>
+        <button id="refreshButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            再来一个!
+        </button>
+    </div>
+    <script>
+        document.getElementById('refreshButton').addEventListener('click', fetchJoke);
+
+        // Fetch a joke on initial page load
+        fetchJoke();
+
+        function fetchJoke() {
+            fetch('https://api.vvhan.com/api/joke?type=json')
+                .then(response => response.json()) // Parse the JSON from the response
+                .then(data => {
+                    // Assuming the API response contains 'title' and 'content' fields
+                    const jokeTitle = data.title; // Extract the title
+                    const jokeContent = data.joke; // Extract the content
+                    // Update the innerHTML of the joke element with the title and content
+                    document.getElementById('joke').innerHTML = `<strong>${jokeTitle}</strong><p>${jokeContent}</p>`;
+                })
+                .catch(() => {
+                    document.getElementById('joke').innerText = 'Failed to load joke. Please try again.';
+                });
+        }
+    </script>
+</body>
+</html>
